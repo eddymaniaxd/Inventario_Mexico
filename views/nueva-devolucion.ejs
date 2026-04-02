@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrar Devolución</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-danger text-white">
+                        <h4 class="mb-0">Registrar Devolución de Producto</h4>
+                    </div>
+                    <div class="card-body">
+                        <form action="/nueva-devolucion" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Número de Orden Original (Order#)</label>
+                                <input type="text" name="numero_orden" class="form-control" placeholder="Ej: 588475" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Producto y Lote Devuelto</label>
+                                <select name="lote_id" class="form-select" required>
+                                    <option value="" disabled selected>Selecciona el producto a retornar...</option>
+                                    <% lotes.forEach(function(lote) { %>
+                                        <option value="<%= lote.lote_id %>">
+                                            <%= lote.nombre %> (Lote: <%= lote.numero_lote %>)
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Cantidad (Returns)</label>
+                                    <input type="number" name="cantidad" class="form-control" min="1" placeholder="Ej: 1" required>
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label">Motivo de Devolución</label>
+                                    <input type="text" name="motivo_devolucion" class="form-control" placeholder="Ej: Producto Dañado" required>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-danger fw-bold">Confirmar Devolución</button>
+                                <a href="/" class="btn btn-outline-secondary">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
