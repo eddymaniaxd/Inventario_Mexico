@@ -47,10 +47,9 @@ const postNuevoLote = async (req, res) => {
             
             // 5. Registrar el movimiento como ENTRADA en el historial
             const sqlMovimiento = `
-                INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad, motivo_devolucion) 
-                VALUES (?, ?, 'ENTRADA', ?, ?)
-            `;
-            await connection.query(sqlMovimiento, [ordenId, loteId, entradas, `Entrada de nuevo lote: ${numero_lote}`]);
+    INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad, motivo_devolucion) 
+    VALUES (?, ?, 'ENTRADA', ?, ?)`;
+    await connection.query(sqlMovimiento, [ordenId, loteId, entradas, `Entrada de nuevo lote: ${numero_lote}`]);
             
             // Confirmar la transacción
             await connection.commit();

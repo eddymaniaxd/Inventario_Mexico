@@ -17,6 +17,20 @@ const getInventarioConsolidado = async (req, res) => {
         // Obtener detalle de lotes
         const [lotes] = await promisePool.query('SELECT * FROM reporte_inventario');
         
+        // ✅ NUEVO: Obtener cantidad de productos por vencer (próximos 30 días)
+        const [porVencer] = await promisePool.query(`
+            SELECT COUNT(DISTINCT p.id) as total
+            FROM lotes l
+            JOIN productos p ON l.producto_id = p.id
+            WHERE l.fecha_expiracion BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND l.entradas - COALESCE(
+                (SELECT SUM(CASE WHEN m.tipo = 'VENTA' THEN m.cantidad ELSE 0 END) 
+                 FROM movimientos m WHERE m.lote_id = l.id), 0
+            ) > 0
+        `);
+        
+        const totalPorVencer = porVencer[0].total;
+        
         // Agrupar por producto
         const productos = lotes.reduce((acc, lote) => {
             const nombre = lote['Product Name'];
@@ -51,14 +65,14 @@ const getInventarioConsolidado = async (req, res) => {
             return acc;
         }, {});
         
-        res.render('index-consolidado', { productos });
+        // ✅ MODIFICADO: Enviar también totalPorVencer a la vista
+        res.render('index-consolidado', { productos, totalPorVencer });
         
     } catch (err) {
         console.error('Error al cargar inventario consolidado:', err);
         res.status(500).send('Error al cargar el inventario');
     }
 };
-
 // Mostrar productos por vencer
 const getPorVencer = async (req, res) => {
     try {
@@ -108,6 +122,7 @@ const getHistorial = async (req, res) => {
         res.status(500).send('Error al cargar el historial');
     }
 };
+
 
 module.exports = {
     getInventarioDetallado,
