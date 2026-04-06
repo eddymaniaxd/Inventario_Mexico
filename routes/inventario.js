@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { getInventario, getPorVencer, getHistorial } = require('../controllers/inventarioController');
+const { 
+    getInventarioDetallado, 
+    getInventarioConsolidado, 
+    getPorVencer, 
+    getHistorial 
+} = require('../controllers/inventarioController');
 
-// Ruta principal del inventario
-router.get('/', getInventario);
+// Ruta principal - Vista CONSOLIDADA (recomendada)
+router.get('/', getInventarioConsolidado);
 
-// Ruta de productos por vencer
+// Vista detallada por lotes (alternativa)
+router.get('/detalle', getInventarioDetallado);
+
 router.get('/por-vencer', getPorVencer);
-
-// Ruta de historial
 router.get('/historial', getHistorial);
 
 module.exports = router;

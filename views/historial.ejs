@@ -26,32 +26,40 @@
                             <th>Detalle / Motivo</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <% if (historial.length === 0) { %>
-                            <tr>
-                                <td colspan="6" class="text-center text-muted">No hay movimientos registrados aún.</td>
-                            </tr>
-                        <% } else { %>
-                            <% historial.forEach(function(mov) { %>
-                                <tr>
-                                    <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
-                                    <td>
-                                        <% if (mov.tipo === 'VENTA') { %>
-                                            <span class="badge bg-warning text-dark">VENTA</span>
-                                        <% } else { %>
-                                            <span class="badge bg-danger">DEVOLUCIÓN</span>
-                                        <% } %>
-                                    </td>
-                                    <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
-                                    <td><%= mov.numero_orden %></td>
-                                    <td class="fw-bold <%= mov.tipo === 'VENTA' ? 'text-danger' : 'text-success' %>">
-                                        <%= mov.tipo === 'VENTA' ? '-' : '+' %><%= mov.cantidad %>
-                                    </td>
-                                    <td><%= mov.motivo_devolucion ? mov.motivo_devolucion : '-' %></td>
-                                </tr>
-                            <% }); %>
-                        <% } %>
-                    </tbody>
+                   <tbody>
+    <% if (historial.length === 0) { %>
+        <tr>
+            <td colspan="6" class="text-center text-muted">No hay movimientos registrados aún.</td>
+        </tr>
+    <% } else { %>
+        <% historial.forEach(function(mov) { %>
+            <tr>
+                <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
+                <td>
+                    <% if (mov.tipo === 'VENTA') { %>
+                        <span class="badge bg-warning text-dark">VENTA</span>
+                    <% } else if (mov.tipo === 'DEVOLUCION') { %>
+                        <span class="badge bg-danger">DEVOLUCIÓN</span>
+                    <% } else { %>
+                        <span class="badge bg-success">ENTRADA</span>  <!-- ✅ Nueva etiqueta -->
+                    <% } %>
+                </td>
+                <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
+                <td><%= mov.numero_orden %></td>
+                
+                <td class="fw-bold 
+                    <%= mov.tipo === 'VENTA' ? 'text-danger' : '' %>
+                    <%= mov.tipo === 'DEVOLUCION' ? 'text-success' : '' %>
+                    <%= mov.tipo === 'ENTRADA' ? 'text-primary' : '' %>">
+                    <%= mov.tipo === 'VENTA' ? '-' : '' %><%= mov.cantidad %>
+                    <%= mov.tipo === 'ENTRADA' ? '+' : '' %>
+                </td>
+                
+                <td><%= mov.motivo_devolucion ? mov.motivo_devolucion : '-' %></td>
+            </tr>
+        <% }); %>
+    <% } %>
+</tbody>
                 </table>
             </div>
         </div>

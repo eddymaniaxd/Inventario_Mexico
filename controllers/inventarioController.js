@@ -1,12 +1,60 @@
 const { promisePool } = require('../config/database');
 
-// Mostrar inventario principal
-const getInventario = async (req, res) => {
+// Mostrar inventario DETALLADO por lote (vista original)
+const getInventarioDetallado = async (req, res) => {
     try {
         const [results] = await promisePool.query('SELECT * FROM reporte_inventario');
         res.render('index', { inventario: results });
     } catch (err) {
         console.error('Error al cargar inventario:', err);
+        res.status(500).send('Error al cargar el inventario');
+    }
+};
+
+// Mostrar inventario CONSOLIDADO por producto (NUEVO)
+const getInventarioConsolidado = async (req, res) => {
+    try {
+        // Obtener detalle de lotes
+        const [lotes] = await promisePool.query('SELECT * FROM reporte_inventario');
+        
+        // Agrupar por producto
+        const productos = lotes.reduce((acc, lote) => {
+            const nombre = lote['Product Name'];
+            
+            if (!acc[nombre]) {
+                acc[nombre] = {
+                    sku: lote['Brand Sku Number'],
+                    entradasTotales: 0,
+                    ventasTotales: 0,
+                    devolucionesTotales: 0,
+                    stockTotal: 0,
+                    lotes: []
+                };
+            }
+            
+            // Acumular totales
+            acc[nombre].entradasTotales += Number(lote['Entradas']) || 0;
+            acc[nombre].ventasTotales += Number(lote['Total sold']) || 0;
+            acc[nombre].devolucionesTotales += Number(lote['Returns']) || 0;
+            acc[nombre].stockTotal += Number(lote['Stock Actual']) || 0;
+            
+            // Guardar detalle del lote
+            acc[nombre].lotes.push({
+                numero: lote['Lot'],
+                expiracion: lote['Exp Date'],
+                entradas: lote['Entradas'],
+                ventas: lote['Total sold'],
+                devoluciones: lote['Returns'],
+                stock: lote['Stock Actual']
+            });
+            
+            return acc;
+        }, {});
+        
+        res.render('index-consolidado', { productos });
+        
+    } catch (err) {
+        console.error('Error al cargar inventario consolidado:', err);
         res.status(500).send('Error al cargar el inventario');
     }
 };
@@ -34,7 +82,7 @@ const getPorVencer = async (req, res) => {
     }
 };
 
-// Mostrar historial de movimientos
+// Mostrar historial
 const getHistorial = async (req, res) => {
     try {
         const sql = `
@@ -62,7 +110,8 @@ const getHistorial = async (req, res) => {
 };
 
 module.exports = {
-    getInventario,
+    getInventarioDetallado,
+    getInventarioConsolidado,
     getPorVencer,
     getHistorial
 };
