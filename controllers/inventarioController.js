@@ -17,19 +17,20 @@ const getInventarioConsolidado = async (req, res) => {
         // Obtener detalle de lotes
         const [lotes] = await promisePool.query('SELECT * FROM reporte_inventario');
         
-        // ✅ NUEVO: Obtener cantidad de productos por vencer (próximos 30 días)
-        const [porVencer] = await promisePool.query(`
-            SELECT COUNT(DISTINCT p.id) as total
-            FROM lotes l
-            JOIN productos p ON l.producto_id = p.id
-            WHERE l.fecha_expiracion BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-            AND l.entradas - COALESCE(
-                (SELECT SUM(CASE WHEN m.tipo = 'VENTA' THEN m.cantidad ELSE 0 END) 
-                 FROM movimientos m WHERE m.lote_id = l.id), 0
-            ) > 0
-        `);
+        // Contar productos por vencer manualmente desde los lotes
+        let totalPorVencer = 0;
+        const hoy = new Date();
+        const dentro30Dias = new Date();
+        dentro30Dias.setDate(hoy.getDate() + 30);
         
-        const totalPorVencer = porVencer[0].total;
+        for (const lote of lotes) {
+            const fechaExpiracion = new Date(lote['Exp Date']);
+            const stockActual = Number(lote['Stock Actual']);
+            
+            if (fechaExpiracion >= hoy && fechaExpiracion <= dentro30Dias && stockActual > 0) {
+                totalPorVencer++;
+            }
+        }
         
         // Agrupar por producto
         const productos = lotes.reduce((acc, lote) => {
@@ -46,26 +47,20 @@ const getInventarioConsolidado = async (req, res) => {
                 };
             }
             
-            // Acumular totales
             acc[nombre].entradasTotales += Number(lote['Entradas']) || 0;
             acc[nombre].ventasTotales += Number(lote['Total sold']) || 0;
             acc[nombre].devolucionesTotales += Number(lote['Returns']) || 0;
             acc[nombre].stockTotal += Number(lote['Stock Actual']) || 0;
             
-            // Guardar detalle del lote
             acc[nombre].lotes.push({
                 numero: lote['Lot'],
                 expiracion: lote['Exp Date'],
-                entradas: lote['Entradas'],
-                ventas: lote['Total sold'],
-                devoluciones: lote['Returns'],
                 stock: lote['Stock Actual']
             });
             
             return acc;
         }, {});
         
-        // ✅ MODIFICADO: Enviar también totalPorVencer a la vista
         res.render('index-consolidado', { productos, totalPorVencer });
         
     } catch (err) {
@@ -77,14 +72,19 @@ const getInventarioConsolidado = async (req, res) => {
 const getPorVencer = async (req, res) => {
     try {
         const sql = `
-            SELECT p.nombre, l.numero_lote, l.fecha_expiracion, 
-                   DATEDIFF(l.fecha_expiracion, CURDATE()) as dias_restantes,
-                   l.entradas - COALESCE(SUM(CASE WHEN m.tipo = 'VENTA' THEN m.cantidad ELSE 0 END), 0) as stock_actual
+            SELECT 
+                p.nombre, 
+                l.numero_lote, 
+                l.fecha_expiracion, 
+                DATEDIFF(l.fecha_expiracion, CURDATE()) as dias_restantes,
+                l.entradas - COALESCE(SUM(CASE WHEN m.tipo = 'VENTA' THEN m.cantidad ELSE 0 END), 0) as stock_actual
             FROM lotes l
             JOIN productos p ON l.producto_id = p.id
             LEFT JOIN movimientos m ON l.id = m.lote_id
             WHERE l.fecha_expiracion BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)
+            AND p.estado = 'activo'
             GROUP BY l.id
+            HAVING stock_actual > 0
             ORDER BY dias_restantes ASC
         `;
         
@@ -101,6 +101,7 @@ const getHistorial = async (req, res) => {
     try {
         const sql = `
             SELECT 
+                DATE(o.fecha_registro) as fecha,
                 o.fecha_registro,
                 m.tipo,
                 p.nombre AS producto,
@@ -122,11 +123,57 @@ const getHistorial = async (req, res) => {
         res.status(500).send('Error al cargar el historial');
     }
 };
-
+// Eliminar producto (soft delete)
+const eliminarProducto = async (req, res) => {
+    const { sku } = req.params;
+    const { motivo } = req.body;
+    
+    console.log(`Intentando eliminar producto: ${sku}, motivo: ${motivo}`);
+    
+    try {
+        // Verificar si el producto existe
+        const [producto] = await promisePool.query(
+            'SELECT * FROM productos WHERE sku = ?',
+            [sku]
+        );
+        
+        if (producto.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Producto no encontrado' 
+            });
+        }
+        
+        // Actualizar estado del producto
+        const [result] = await promisePool.query(
+            `UPDATE productos 
+             SET estado = 'eliminado', 
+                 fecha_eliminacion = NOW(), 
+                 motivo_eliminacion = ? 
+             WHERE sku = ?`,
+            [motivo || 'eliminado', sku]
+        );
+        
+        console.log(`Producto ${sku} actualizado. Filas afectadas: ${result.affectedRows}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Producto eliminado correctamente' 
+        });
+        
+    } catch (err) {
+        console.error('Error al eliminar producto:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: err.message 
+        });
+    }
+};
 
 module.exports = {
     getInventarioDetallado,
     getInventarioConsolidado,
     getPorVencer,
-    getHistorial
+    getHistorial,
+    eliminarProducto  
 };

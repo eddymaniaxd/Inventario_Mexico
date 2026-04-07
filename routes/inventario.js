@@ -4,13 +4,23 @@ const {
     getInventarioDetallado, 
     getInventarioConsolidado, 
     getPorVencer, 
-    getHistorial 
+    getHistorial ,
+    eliminarProducto
 } = require('../controllers/inventarioController');
 
-// Ruta principal - Vista CONSOLIDADA (recomendada)
+// ✅ Importar middleware de autenticación
+const { isAuthenticated } = require('../middleware/auth');
+
+// ✅ Aplicar autenticación a TODAS las rutas de inventario
+router.use(isAuthenticated);
+
+// Ruta para eliminar producto
+router.delete('/productos/eliminar/:sku', eliminarProducto);
+
+// Ruta principal - Vista CONSOLIDADA
 router.get('/', getInventarioConsolidado);
 
-// Vista detallada por lotes (alternativa)
+// Vista detallada por lotes
 router.get('/detalle', getInventarioDetallado);
 
 router.get('/por-vencer', getPorVencer);

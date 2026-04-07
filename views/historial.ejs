@@ -4,18 +4,60 @@
     <meta charset="UTF-8">
     <title>Historial de Movimientos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Buttons CSS -->
+    <link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
     <div class="container mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Historial de Transacciones</h2>
-            <!-- ✅ Cambiar ruta a / (ahora es la raíz del inventario) -->
-            <a href="/" class="btn btn-outline-dark">← Volver al Inventario</a>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Historial de Transacciones</h2>
+      
+    </div>
+    <div>
+        <a href="/" class="btn btn-outline-dark">← Volver al Inventario</a>
+        <a href="/logout" class="btn btn-outline-danger ms-2">🚪 Cerrar Sesión</a>
+    </div>
+  </div>
+
+        <!-- Filtros de Fecha -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📅 Filtrar por Fecha</h5>
+            </div>
+            <div class="card-body">
+                <form id="filtroForm" class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Fecha Inicio</label>
+                        <input type="date" id="fechaInicio" class="form-control">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" id="fechaFin" class="form-control">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" id="btnFiltrar" class="btn btn-primary me-2">🔍 Filtrar</button>
+                        <button type="button" id="btnLimpiar" class="btn btn-secondary">🗑️ Limpiar</button>
+                    </div>
+                </form>
+            </div>
         </div>
-        
+
+        <!-- Botones de Exportación -->
+        <div class="mb-3 text-end">
+            <button id="btnExcel" class="btn btn-success me-2">
+                📊 Exportar a Excel
+            </button>
+            <button id="btnPDF" class="btn btn-danger">
+                📄 Exportar a PDF
+            </button>
+        </div>
+
         <div class="card shadow-sm">
             <div class="card-body">
-                <table class="table table-hover align-middle">
+                <table id="tablaHistorial" class="table table-hover align-middle">
                     <thead class="table-dark">
                         <tr>
                             <th>Fecha y Hora</th>
@@ -26,43 +68,125 @@
                             <th>Detalle / Motivo</th>
                         </tr>
                     </thead>
-                   <tbody>
-    <% if (historial.length === 0) { %>
-        <tr>
-            <td colspan="6" class="text-center text-muted">No hay movimientos registrados aún.</td>
-        </tr>
-    <% } else { %>
-        <% historial.forEach(function(mov) { %>
-            <tr>
-                <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
-                <td>
-                    <% if (mov.tipo === 'VENTA') { %>
-                        <span class="badge bg-warning text-dark">VENTA</span>
-                    <% } else if (mov.tipo === 'DEVOLUCION') { %>
-                        <span class="badge bg-danger">DEVOLUCIÓN</span>
-                    <% } else { %>
-                        <span class="badge bg-success">ENTRADA</span>  <!-- ✅ Nueva etiqueta -->
-                    <% } %>
-                </td>
-                <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
-                <td><%= mov.numero_orden %></td>
-                
-                <td class="fw-bold 
-                    <%= mov.tipo === 'VENTA' ? 'text-danger' : '' %>
-                    <%= mov.tipo === 'DEVOLUCION' ? 'text-success' : '' %>
-                    <%= mov.tipo === 'ENTRADA' ? 'text-primary' : '' %>">
-                    <%= mov.tipo === 'VENTA' ? '-' : '' %><%= mov.cantidad %>
-                    <%= mov.tipo === 'ENTRADA' ? '+' : '' %>
-                </td>
-                
-                <td><%= mov.motivo_devolucion ? mov.motivo_devolucion : '-' %></td>
-            </tr>
-        <% }); %>
-    <% } %>
-</tbody>
+                    <tbody>
+                        <% if (historial.length === 0) { %>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No hay movimientos registrados aún.</td>
+                            </tr>
+                        <% } else { %>
+                            <% historial.forEach(function(mov) { %>
+                                <tr data-fecha="<%= new Date(mov.fecha_registro).toISOString().split('T')[0] %>">
+                                    <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
+                                    <td>
+                                        <% if (mov.tipo === 'VENTA') { %>
+                                            <span class="badge bg-warning text-dark">VENTA</span>
+                                        <% } else if (mov.tipo === 'DEVOLUCION') { %>
+                                            <span class="badge bg-danger">DEVOLUCIÓN</span>
+                                        <% } else { %>
+                                            <span class="badge bg-success">ENTRADA</span>
+                                        <% } %>
+                                    </td>
+                                    <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
+                                    <td><%= mov.numero_orden %></td>
+                                    <td class="fw-bold 
+                                        <%= mov.tipo === 'VENTA' ? 'text-danger' : '' %>
+                                        <%= mov.tipo === 'DEVOLUCION' ? 'text-success' : '' %>
+                                        <%= mov.tipo === 'ENTRADA' ? 'text-primary' : '' %>">
+                                        <%= mov.tipo === 'VENTA' ? '-' : '' %><%= mov.cantidad %>
+                                        <%= mov.tipo === 'ENTRADA' ? '+' : '' %>
+                                    </td>
+                                    <td><%= mov.motivo_devolucion ? mov.motivo_devolucion : '-' %></td>
+                                </tr>
+                            <% }); %>
+                        <% } %>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Buttons JS -->
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+    <!-- Excel y PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+    <!-- PDFMake -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Inicializar DataTable
+            var table = $('#tablaHistorial').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+                },
+                order: [[0, 'desc']],
+                pageLength: 25,
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '📊 Exportar a Excel',
+                        title: 'Historial_Movimientos',
+                        className: 'btn-success d-none'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '📄 Exportar a PDF',
+                        title: 'Historial_Movimientos',
+                        className: 'btn-danger d-none',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL'
+                    }
+                ]
+            });
+
+            // Botón Excel personalizado
+            $('#btnExcel').on('click', function() {
+                table.button(0).trigger();
+            });
+
+            // Botón PDF personalizado
+            $('#btnPDF').on('click', function() {
+                table.button(1).trigger();
+            });
+
+            // Filtrar por fecha
+            $('#btnFiltrar').on('click', function() {
+                var fechaInicio = $('#fechaInicio').val();
+                var fechaFin = $('#fechaFin').val();
+                
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    var fechaFila = $(table.row(dataIndex).node()).data('fecha');
+                    
+                    if (!fechaInicio && !fechaFin) return true;
+                    if (!fechaInicio && fechaFila <= fechaFin) return true;
+                    if (!fechaFin && fechaFila >= fechaInicio) return true;
+                    if (fechaFila >= fechaInicio && fechaFila <= fechaFin) return true;
+                    
+                    return false;
+                });
+                
+                table.draw();
+                $.fn.dataTable.ext.search.pop();
+            });
+
+            // Limpiar filtros
+            $('#btnLimpiar').on('click', function() {
+                $('#fechaInicio').val('');
+                $('#fechaFin').val('');
+                table.search('').columns().search('').draw();
+            });
+        });
+    </script>
 </body>
 </html>

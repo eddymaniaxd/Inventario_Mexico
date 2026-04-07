@@ -7,6 +7,11 @@ const getNuevaDevolucion = async (req, res) => {
             SELECT l.id AS lote_id, p.nombre, l.numero_lote 
             FROM lotes l 
             JOIN productos p ON l.producto_id = p.id
+            WHERE p.estado = 'activo'
+            AND l.entradas - COALESCE(
+                (SELECT SUM(CASE WHEN m.tipo = 'VENTA' THEN m.cantidad ELSE 0 END) 
+                 FROM movimientos m WHERE m.lote_id = l.id), 0
+            ) > 0
         `;
         
         const [lotes] = await promisePool.query(sql);
@@ -21,7 +26,6 @@ const getNuevaDevolucion = async (req, res) => {
 const postNuevaDevolucion = async (req, res) => {
     const { numero_orden, lote_id, cantidad, motivo_devolucion } = req.body;
     
-    // Validaciones
     if (!numero_orden || !lote_id || !cantidad) {
         return res.status(400).send('Número de orden, lote y cantidad son obligatorios');
     }
@@ -31,14 +35,11 @@ const postNuevaDevolucion = async (req, res) => {
     }
     
     try {
-        // Insertar o ignorar orden
         await promisePool.query("INSERT IGNORE INTO ordenes (numero_orden) VALUES (?)", [numero_orden]);
         
-        // Obtener ID de la orden
         const [ordenRows] = await promisePool.query("SELECT id FROM ordenes WHERE numero_orden = ?", [numero_orden]);
         const ordenId = ordenRows[0].id;
         
-        // Registrar devolución
         const sqlMovimiento = "INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad, motivo_devolucion) VALUES (?, ?, 'DEVOLUCION', ?, ?)";
         await promisePool.query(sqlMovimiento, [ordenId, lote_id, cantidad, motivo_devolucion || null]);
         

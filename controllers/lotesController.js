@@ -24,8 +24,10 @@ const postNuevoLote = async (req, res) => {
         await connection.beginTransaction();
         
         try {
-            // 1. Insertar producto (o actualizar si existe)
-            const sqlProducto = "INSERT INTO productos (sku, nombre) VALUES (?, ?) ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)";
+            // 1. Insertar producto (o actualizar si existe) - Asegurar estado activo
+            const sqlProducto = `INSERT INTO productos (sku, nombre, estado) 
+                                 VALUES (?, ?, 'activo') 
+                                 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), estado = 'activo'`;
             await connection.query(sqlProducto, [sku, nombre]);
             
             // 2. Obtener ID del producto
@@ -47,9 +49,9 @@ const postNuevoLote = async (req, res) => {
             
             // 5. Registrar el movimiento como ENTRADA en el historial
             const sqlMovimiento = `
-    INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad, motivo_devolucion) 
-    VALUES (?, ?, 'ENTRADA', ?, ?)`;
-    await connection.query(sqlMovimiento, [ordenId, loteId, entradas, `Entrada de nuevo lote: ${numero_lote}`]);
+                INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad, motivo_devolucion) 
+                VALUES (?, ?, 'ENTRADA', ?, ?)`;
+            await connection.query(sqlMovimiento, [ordenId, loteId, entradas, `Entrada de nuevo lote: ${numero_lote}`]);
             
             // Confirmar la transacción
             await connection.commit();

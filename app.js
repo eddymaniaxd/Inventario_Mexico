@@ -7,6 +7,7 @@ const inventarioRoutes = require('./routes/inventario');
 const ventasRoutes = require('./routes/ventas');
 const devolucionesRoutes = require('./routes/devoluciones');
 const lotesRoutes = require('./routes/lotes');
+const authRoutes = require('./routes/auth');  // ← NUEVA RUTA
 
 // Configuraciones
 app.set('view engine', 'ejs');
@@ -14,19 +15,27 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware de logging
+// Configurar sesiones (antes de las rutas)
+const { sessionConfig } = require('./middleware/auth');
+app.use(sessionConfig);
+
+// Middleware para pasar usuario a todas las vistas
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    res.locals.user = req.session.user || null;
     next();
 });
 
 // Usar rutas
+app.use('/', authRoutes);  // ← NUEVA (rutas de login)
 app.use('/', inventarioRoutes);
 app.use('/ventas', ventasRoutes);
 app.use('/devoluciones', devolucionesRoutes);
 app.use('/lotes', lotesRoutes);
+
+// Resto del código...
 
 // Manejo de errores 404
 app.use((req, res) => {
