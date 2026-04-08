@@ -12,33 +12,37 @@ const postLogin = async (req, res) => {
     console.log('Usuario:', username);
     
     try {
-        // Buscar usuario
         const [users] = await promisePool.query(
             'SELECT * FROM usuarios WHERE username = ?',
             [username]
         );
         
-        console.log('Usuarios encontrados en BD:', users.length);
-        
         if (users.length === 0) {
-            console.log('❌ Usuario no existe en BD');
+            console.log('❌ Usuario no existe');
             return res.render('login', { error: 'Usuario o contraseña incorrectos' });
         }
         
         const user = users[0];
         console.log('Usuario encontrado:', user.username);
+        console.log('Password en BD (primeros 20):', user.password.substring(0, 20));
         
-        // Verificar contraseña encriptada
-        const validPassword = await bcrypt.compare(password, user.password);
+        let validPassword = false;
+        
+        // Detectar si la contraseña está encriptada (empieza con $2b$, $2a$, $2y$)
+        if (user.password && (user.password.startsWith('$2b$') || user.password.startsWith('$2a$') || user.password.startsWith('$2y$'))) {
+            console.log('Contraseña encriptada detectada, usando bcrypt');
+            validPassword = await bcrypt.compare(password, user.password);
+        } else {
+            console.log('Contraseña en texto plano detectada, comparación directa');
+            validPassword = (password === user.password);
+        }
         
         console.log('Comparación:', validPassword ? '✅ VÁLIDA' : '❌ INVÁLIDA');
         
         if (!validPassword) {
-            console.log('❌ Contraseña incorrecta');
             return res.render('login', { error: 'Usuario o contraseña incorrectos' });
         }
         
-        // Guardar sesión
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -48,7 +52,6 @@ const postLogin = async (req, res) => {
         
         console.log('✅ Login exitoso! Redirigiendo a /');
         res.redirect('/');
-        
     } catch (err) {
         console.error('Error en login:', err);
         res.render('login', { error: 'Error al iniciar sesión: ' + err.message });

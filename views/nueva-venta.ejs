@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <title>Registrar Venta</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>💰 Registrar Nueva Venta</h2>
-    <div>
-        <a href="/" class="btn btn-outline-secondary">← Volver al Inventario</a>
-        <a href="/logout" class="btn btn-outline-danger ms-2">🚪 Cerrar Sesión</a>
-    </div>
-</div>
 </head>
 <body class="bg-light">
     <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>💰 Registrar Nueva Venta</h2>
+            <div>
+                <a href="/" class="btn btn-outline-secondary">← Volver al Inventario</a>
+                <a href="/logout" class="btn btn-outline-danger ms-2">🚪 Cerrar Sesión</a>
+            </div>
+        </div>
+
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card shadow">
@@ -22,7 +22,6 @@
                         <h4 class="mb-0">Registrar Nueva Venta</h4>
                     </div>
                     <div class="card-body">
-                        <!-- ✅ Cambiar action a la nueva ruta -->
                         <form action="/ventas/nueva-venta" method="POST">
                             <div class="mb-3">
                                 <label class="form-label">Número de Orden (Order#)</label>
