@@ -79,12 +79,14 @@
                                     <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
                                     <td>
                                         <% if (mov.tipo === 'VENTA') { %>
-                                            <span class="badge bg-warning text-dark">VENTA</span>
-                                        <% } else if (mov.tipo === 'DEVOLUCION') { %>
-                                            <span class="badge bg-danger">DEVOLUCIÓN</span>
-                                        <% } else { %>
-                                            <span class="badge bg-success">ENTRADA</span>
-                                        <% } %>
+                                             <span class="badge bg-warning text-dark">VENTA</span>
+                                         <% } else if (mov.tipo === 'DEVOLUCION') { %>
+                                             <span class="badge bg-danger">DEVOLUCIÓN</span>
+                                         <% } else if (mov.tipo === 'ENTRADA') { %>
+                                             <span class="badge bg-success">ENTRADA</span>
+                                         <% } else if (mov.tipo === 'VENCIDO') { %>
+                                             <span class="badge bg-dark">VENCIDO</span>
+                                         <% } %>
                                     </td>
                                     <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
                                     <td><%= mov.numero_orden %></td>

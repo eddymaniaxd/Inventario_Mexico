@@ -5,7 +5,11 @@ const {
     getInventarioConsolidado, 
     getPorVencer, 
     getHistorial ,
-    eliminarProducto
+    eliminarProducto,
+    getProductosVencidos,
+    eliminarLoteVencido 
+
+
 } = require('../controllers/inventarioController');
 
 // ✅ Importar middleware de autenticación
@@ -25,5 +29,7 @@ router.get('/detalle', getInventarioDetallado);
 
 router.get('/por-vencer', getPorVencer);
 router.get('/historial', getHistorial);
+router.get('/vencidos', getProductosVencidos);
+router.post('/vencidos/eliminar/:id', eliminarLoteVencido);
 
 module.exports = router;

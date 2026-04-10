@@ -4,9 +4,9 @@ const readline = require('readline');
 
 const pool = mysql.createPool({
     host: 'localhost',
-    port: 33061,
+    port: 3306,
     user: 'root',
-    password: '1234eddyxdi?kXD',
+    password: '',
     database: 'mexico_inventario'
 }).promise();
 

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Productos Vencidos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>⚠️ Productos Vencidos</h2>
+            <div>
+                <a href="/" class="btn btn-outline-secondary">← Volver al Inventario</a>
+                <a href="/logout" class="btn btn-outline-danger ms-2">🚪 Cerrar Sesión</a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">📦 Lotes con fecha de expiración vencida</h5>
+            </div>
+            <div class="card-body">
+                <% if (lotes.length === 0) { %>
+                    <div class="alert alert-success">
+                        ✅ No hay productos vencidos en el inventario.
+                    </div>
+                <% } else { %>
+                    <div class="alert alert-warning">
+                        ⚠️ Los siguientes lotes están vencidos. Debes darles de baja para que no afecten tu inventario.
+                    </div>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Número de Lote</th>
+                                <th>Fecha Expiración</th>
+                                <th>Stock Actual</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% lotes.forEach(function(lote) { %>
+                                <tr class="table-danger">
+                                    <td><strong><%= lote.nombre %></strong></td>
+                                    <td><%= lote.numero_lote %></td>
+                                    <td><%= new Date(lote.fecha_expiracion).toLocaleDateString() %></td>
+                                    <td class="fw-bold text-danger"><%= lote.stock_actual %> unidades</td>
+                                    <td>
+                                        <form action="/vencidos/eliminar/<%= lote.lote_id %>" method="POST" 
+                                              onsubmit="return confirm('⚠️ ¿Estás seguro?\n\nEste lote está VENCIDO.\nSe retirarán <%= lote.stock_actual %> unidades del inventario.\nSe registrará en el historial como VENCIDO.\n\n¿Confirmar?');">
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                🗑️ Dar de Baja (Vencido)
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
