@@ -7,7 +7,7 @@ const pool = mysql.createPool({
     port: 3306,
     user: 'root',
     password: '',
-    database: 'mexico_inventario'
+    database: 'mexico_inventario2'
 }).promise();
 
 const rl = readline.createInterface({

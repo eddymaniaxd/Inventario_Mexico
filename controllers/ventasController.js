@@ -16,7 +16,6 @@ const getNuevaVenta = async (req, res) => {
         `;
         
         const [lotes] = await promisePool.query(sql);
-        console.log('Lotes con stock:', lotes.map(l => ({ id: l.lote_id, stock: l.stock_actual })));
         res.render('nueva-venta', { lotes: lotes });
     } catch (err) {
         console.error('Error:', err);
@@ -26,13 +25,22 @@ const getNuevaVenta = async (req, res) => {
 
 const postNuevaVenta = async (req, res) => {
     const { numero_orden, lote_id, cantidad } = req.body;
+    const cantidadNum = parseInt(cantidad);
+    
+    // ✅ Crear orden ÚNICA para esta venta
+    const ordenUnica = `${numero_orden}-VENTA-${Date.now()}`;
     
     console.log('=== POST VENTA ===');
+    console.log('Orden única:', ordenUnica);
     console.log('Lote ID:', lote_id);
-    console.log('Cantidad:', cantidad);
+    console.log('Cantidad:', cantidadNum);
     
     if (!numero_orden || !lote_id || !cantidad) {
         return res.status(400).send('Todos los campos son obligatorios');
+    }
+    
+    if (cantidadNum <= 0) {
+        return res.status(400).send('La cantidad debe ser mayor a 0');
     }
     
     try {
@@ -45,34 +53,34 @@ const postNuevaVenta = async (req, res) => {
             WHERE l.id = ?
         `, [lote_id]);
         
-        console.log('Resultado:', stockResult);
-        
         if (stockResult.length === 0) {
             return res.status(400).send('Lote no encontrado');
         }
         
-        // ✅ CONVERTIR A NÚMEROS (parseInt)
         const entradas = parseInt(stockResult[0].entradas) || 0;
         const ventas = parseInt(stockResult[0].ventas) || 0;
         const devoluciones = parseInt(stockResult[0].devoluciones) || 0;
         
-        // ✅ AHORA SÍ suma correctamente
         const stockActual = entradas - ventas + devoluciones;
         
-        console.log(`Entradas: ${entradas}, Ventas: ${ventas}, Devoluciones: ${devoluciones}, Stock: ${stockActual}`);
+        console.log(`Stock actual: ${stockActual}`);
         
-        if (stockActual < cantidad) {
+        if (stockActual < cantidadNum) {
             return res.status(400).send(`Stock insuficiente. Disponible: ${stockActual}`);
         }
         
-        await promisePool.query("INSERT IGNORE INTO ordenes (numero_orden) VALUES (?)", [numero_orden]);
+        // ✅ Insertar NUEVA orden con fecha actual
+        await promisePool.query(
+            "INSERT INTO ordenes (numero_orden, fecha_registro) VALUES (?, NOW())",
+            [ordenUnica]
+        );
         
-        const [ordenRows] = await promisePool.query("SELECT id FROM ordenes WHERE numero_orden = ?", [numero_orden]);
+        const [ordenRows] = await promisePool.query("SELECT id FROM ordenes WHERE numero_orden = ?", [ordenUnica]);
         const ordenId = ordenRows[0].id;
         
         await promisePool.query(
             "INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad) VALUES (?, ?, 'VENTA', ?)",
-            [ordenId, lote_id, cantidad]
+            [ordenId, lote_id, cantidadNum]
         );
         
         console.log('✅ Venta exitosa');

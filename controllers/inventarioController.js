@@ -13,6 +13,7 @@ const getInventarioConsolidado = async (req, res) => {
                     entradasTotales: 0,
                     ventasTotales: 0,
                     devolucionesTotales: 0,
+                    danadosTotales: 0,  // ← AGREGAR ESTA LÍNEA
                     stockTotal: 0,
                     lotes: []
                 };
@@ -20,6 +21,7 @@ const getInventarioConsolidado = async (req, res) => {
             acc[nombre].entradasTotales += Number(lote['Entradas']) || 0;
             acc[nombre].ventasTotales += Number(lote['Total sold']) || 0;
             acc[nombre].devolucionesTotales += Number(lote['Returns']) || 0;
+            acc[nombre].danadosTotales += Number(lote['Danados']) || 0;  // ← AGREGAR ESTA LÍNEA
             acc[nombre].stockTotal += Number(lote['Stock Actual']) || 0;
             acc[nombre].lotes.push({
                 numero: lote['Lot'],
@@ -84,28 +86,64 @@ const getPorVencer = async (req, res) => {
 const getHistorial = async (req, res) => {
     try {
         const sql = `
-            SELECT o.fecha_registro, m.tipo, p.nombre AS producto, l.numero_lote, o.numero_orden, m.cantidad, m.motivo_devolucion
+            SELECT 
+                m.id as movimiento_id,
+                (SELECT fecha_registro FROM ordenes WHERE id = m.orden_id) as fecha_registro,
+                m.tipo, 
+                p.nombre AS producto, 
+                l.numero_lote, 
+                o.numero_orden, 
+                m.cantidad, 
+                m.motivo_devolucion
             FROM movimientos m
             JOIN ordenes o ON m.orden_id = o.id
             JOIN lotes l ON m.lote_id = l.id
             JOIN productos p ON l.producto_id = p.id
-            ORDER BY o.fecha_registro DESC
+            WHERE m.tipo IN ('VENTA', 'DEVOLUCION', 'ENTRADA', 'VENCIDO', 'DAÑADO')
+            ORDER BY m.id DESC
         `;
         const [results] = await promisePool.query(sql);
         res.render('historial', { historial: results });
     } catch (err) {
-        console.error('Error:', err);
+        console.error('Error al cargar historial:', err);
         res.status(500).send('Error al cargar historial');
     }
 };
-
 const eliminarProducto = async (req, res) => {
     const { sku } = req.params;
     const { motivo } = req.body;
+    
     try {
-        await promisePool.query('UPDATE productos SET estado = "eliminado", fecha_eliminacion = NOW(), motivo_eliminacion = ? WHERE sku = ?', [motivo || 'eliminado', sku]);
-        res.json({ success: true, message: 'Producto eliminado' });
+        // 1. Obtener el ID del producto
+        const [producto] = await promisePool.query('SELECT id FROM productos WHERE sku = ?', [sku]);
+        
+        if (producto.length === 0) {
+            return res.json({ success: false, message: 'Producto no encontrado' });
+        }
+        
+        const productoId = producto[0].id;
+        
+        // 2. Obtener todos los lotes del producto
+        const [lotes] = await promisePool.query('SELECT id FROM lotes WHERE producto_id = ?', [productoId]);
+        
+        if (lotes.length > 0) {
+            const loteIds = lotes.map(l => l.id).join(',');
+            
+            // 3. Eliminar movimientos de esos lotes
+            await promisePool.query(`DELETE FROM movimientos WHERE lote_id IN (${loteIds})`);
+            
+            // 4. Eliminar lotes
+            await promisePool.query(`DELETE FROM lotes WHERE producto_id = ?`, [productoId]);
+        }
+        
+        // 5. Eliminar el producto
+        await promisePool.query('DELETE FROM productos WHERE id = ?', [productoId]);
+        
+        console.log(`✅ Producto ${sku} eliminado COMPLETAMENTE (incluyendo movimientos)`);
+        res.json({ success: true, message: '✅ Producto eliminado completamente (incluyendo historial)' });
+        
     } catch (err) {
+        console.error('Error al eliminar producto:', err);
         res.json({ success: false, message: err.message });
     }
 };

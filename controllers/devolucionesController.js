@@ -3,7 +3,6 @@ const { promisePool } = require('../config/database');
 // Mostrar formulario de nueva devolución
 const getNuevaDevolucion = async (req, res) => {
     try {
-        // ✅ Mostrar TODOS los lotes activos (sin filtrar por stock)
         const sql = `
             SELECT DISTINCT l.id AS lote_id, p.nombre, l.numero_lote
             FROM lotes l 
@@ -25,31 +24,40 @@ const getNuevaDevolucion = async (req, res) => {
 const postNuevaDevolucion = async (req, res) => {
     const { numero_orden, lote_id, cantidad, motivo_devolucion } = req.body;
     
+    // ✅ Convertir cantidad a número
+    const cantidadNum = parseInt(cantidad);
+    
+    // ✅ Crear orden ÚNICA para esta devolución
+    const ordenUnica = `${numero_orden}-DEVOLUCION-${Date.now()}`;
+    
     console.log('=== POST DEVOLUCIÓN ===');
-    console.log('Número orden:', numero_orden);
+    console.log('Orden única generada:', ordenUnica);
     console.log('Lote ID:', lote_id);
-    console.log('Cantidad:', cantidad);
+    console.log('Cantidad:', cantidadNum);
     console.log('Motivo:', motivo_devolucion);
     
     if (!numero_orden || !lote_id || !cantidad) {
         return res.status(400).send('Número de orden, lote y cantidad son obligatorios');
     }
     
-    if (cantidad <= 0) {
+    if (cantidadNum <= 0) {
         return res.status(400).send('La cantidad debe ser mayor a 0');
     }
     
     try {
-        // Insertar orden si no existe
-        await promisePool.query("INSERT IGNORE INTO ordenes (numero_orden) VALUES (?)", [numero_orden]);
+        // ✅ Insertar NUEVA orden con fecha actual
+        await promisePool.query(
+            "INSERT INTO ordenes (numero_orden, fecha_registro) VALUES (?, NOW())",
+            [ordenUnica]
+        );
         
-        const [ordenRows] = await promisePool.query("SELECT id FROM ordenes WHERE numero_orden = ?", [numero_orden]);
+        const [ordenRows] = await promisePool.query("SELECT id FROM ordenes WHERE numero_orden = ?", [ordenUnica]);
         const ordenId = ordenRows[0].id;
         
         // Registrar devolución
         const sqlMovimiento = `INSERT INTO movimientos (orden_id, lote_id, tipo, cantidad, motivo_devolucion) 
                                 VALUES (?, ?, 'DEVOLUCION', ?, ?)`;
-        await promisePool.query(sqlMovimiento, [ordenId, lote_id, cantidad, motivo_devolucion || null]);
+        await promisePool.query(sqlMovimiento, [ordenId, lote_id, cantidadNum, motivo_devolucion || null]);
         
         console.log('✅ Devolución registrada exitosamente');
         res.redirect('/');

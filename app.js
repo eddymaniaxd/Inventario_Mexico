@@ -8,6 +8,7 @@ const ventasRoutes = require('./routes/ventas');
 const devolucionesRoutes = require('./routes/devoluciones');
 const lotesRoutes = require('./routes/lotes');
 const authRoutes = require('./routes/auth');  // ← NUEVA RUTA
+const danadosRoutes = require('./routes/danados'); 
 
 // Configuraciones
 app.set('view engine', 'ejs');
@@ -34,6 +35,7 @@ app.use('/', inventarioRoutes);
 app.use('/ventas', ventasRoutes);
 app.use('/devoluciones', devolucionesRoutes);
 app.use('/lotes', lotesRoutes);
+app.use('/danados', danadosRoutes);
 
 // Resto del código...
 

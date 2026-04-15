@@ -4,191 +4,368 @@
     <meta charset="UTF-8">
     <title>Historial de Movimientos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <!-- Buttons CSS -->
     <link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 280px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-header p {
+            margin: 5px 0 0;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .sidebar-menu .menu-item {
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: #00d2ff;
+        }
+
+        .sidebar-menu .menu-item i {
+            width: 24px;
+            font-size: 1.2rem;
+        }
+
+        /* Contenido principal */
+        .main-content {
+            margin-left: 280px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                left: -280px;
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            .main-content {
+                margin-left: 0;
+                padding-top: 60px;
+            }
+            .menu-toggle {
+                display: block;
+            }
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2>Historial de Transacciones</h2>
-      
+<body>
+
+<!-- Botón toggle para móvil -->
+<button class="menu-toggle" id="menuToggle">
+    <i class="fas fa-bars"></i> Menú
+</button>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>📦 Inventario</h3>
+        <p>Sistema de Gestión</p>
     </div>
-    <div>
-        <a href="/" class="btn btn-outline-dark">← Volver al Inventario</a>
-        <a href="/logout" class="btn btn-outline-danger ms-2">🚪 Cerrar Sesión</a>
+    <div class="sidebar-menu">
+        <a href="/" class="menu-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/detalle" class="menu-item">
+            <i class="fas fa-boxes"></i>
+            <span>Ver por Lotes</span>
+        </a>
+        <a href="/historial" class="menu-item">
+            <i class="fas fa-history"></i>
+            <span>Historial</span>
+        </a>
+        <a href="/vencidos" class="menu-item">
+            <i class="fas fa-skull-crossbones"></i>
+            <span>Vencidos</span>
+        </a>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 20px;"></div>
+        <a href="/lotes/nuevo-lote" class="menu-item">
+            <i class="fas fa-plus-circle"></i>
+            <span>Entrada</span>
+        </a>
+        <a href="/ventas/nueva-venta" class="menu-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Venta</span>
+        </a>
+        <a href="/devoluciones/nueva-devolucion" class="menu-item">
+            <i class="fas fa-undo-alt"></i>
+            <span>Devolución</span>
+        </a>
+         <a href="/danados/nuevo-danado" class="menu-item">
+            <i class="fa-trash-alt"></i>
+            <span>Productos Dañados</span>
+        </a>
+        
+        <a href="/por-vencer" class="menu-item">
+            <i class="fas fa-clock"></i>
+            <span>Por Vencer</span>
+        </a>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 20px;"></div>
+        <a href="/logout" class="menu-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Cerrar Sesión</span>
+        </a>
     </div>
-  </div>
+</div>
 
-        <!-- Filtros de Fecha -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">📅 Filtrar por Fecha</h5>
-            </div>
-            <div class="card-body">
-                <form id="filtroForm" class="row g-3">
-                    <div class="col-md-5">
-                        <label class="form-label">Fecha Inicio</label>
-                        <input type="date" id="fechaInicio" class="form-control">
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Fecha Fin</label>
-                        <input type="date" id="fechaFin" class="form-control">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="button" id="btnFiltrar" class="btn btn-primary me-2">🔍 Filtrar</button>
-                        <button type="button" id="btnLimpiar" class="btn btn-secondary">🗑️ Limpiar</button>
-                    </div>
-                </form>
-            </div>
+<!-- Contenido principal -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>📜 Historial de Transacciones</h2>
+            <% if (user) { %>
+                <small class="text-muted">Bienvenido, <strong><%= user.nombre %></strong> | Rol: <span class="badge bg-secondary"><%= user.rol %></span></small>
+            <% } %>
         </div>
+    </div>
 
-        <!-- Botones de Exportación -->
-        <div class="mb-3 text-end">
-            <button id="btnExcel" class="btn btn-success me-2">
-                📊 Exportar a Excel
-            </button>
-            <button id="btnPDF" class="btn btn-danger">
-                📄 Exportar a PDF
-            </button>
+    <!-- Filtros de Fecha -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">📅 Filtrar por Fecha</h5>
         </div>
+        <div class="card-body">
+            <form id="filtroForm" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="form-control">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="form-control">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" id="btnFiltrar" class="btn btn-primary me-2">🔍 Filtrar</button>
+                    <button type="button" id="btnLimpiar" class="btn btn-secondary">🗑️ Limpiar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <table id="tablaHistorial" class="table table-hover align-middle">
-                    <thead class="table-dark">
+    <!-- Botones de Exportación -->
+    <div class="mb-3 text-end">
+        <button id="btnExcel" class="btn btn-success me-2">
+            📊 Exportar a Excel
+        </button>
+        <button id="btnPDF" class="btn btn-danger">
+            📄 Exportar a PDF
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table id="tablaHistorial" class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Tipo</th>
+                        <th>Producto (Lote)</th>
+                        <th>Orden #</th>
+                        <th>Cantidad</th>
+                        <th>Detalle / Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (historial.length === 0) { %>
                         <tr>
-                            <th>Fecha y Hora</th>
-                            <th>Tipo</th>
-                            <th>Producto (Lote)</th>
-                            <th>Orden #</th>
-                            <th>Cantidad</th>
-                            <th>Detalle / Motivo</th>
+                            <td colspan="6" class="text-center text-muted">No hay movimientos registrados aún.</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <% if (historial.length === 0) { %>
-                            <tr>
-                                <td colspan="6" class="text-center text-muted">No hay movimientos registrados aún.</td>
+                    <% } else { %>
+                        <% historial.forEach(function(mov) { %>
+                            <tr data-fecha="<%= new Date(mov.fecha_registro).toISOString().split('T')[0] %>">
+                                <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
+                                <td>
+                                    <% if (mov.tipo === 'VENTA') { %>
+                                        <span class="badge bg-warning text-dark">VENTA</span>
+                                    <% } else if (mov.tipo === 'DEVOLUCION') { %>
+                                        <span class="badge bg-danger">DEVOLUCIÓN</span>
+                                    <% } else if (mov.tipo === 'ENTRADA') { %>
+                                        <span class="badge bg-success">ENTRADA</span>
+                                    <% } else if (mov.tipo === 'VENCIDO') { %>
+                                        <span class="badge bg-dark">VENCIDO</span>
+                                    <% } else if (mov.tipo === 'DAÑADO') { %>
+                                        <span class="badge bg-secondary">DAÑADO</span>
+                                    <% } %>
+                                </td>
+                                <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
+                                <td><%= mov.numero_orden %></td>
+                                <td class="fw-bold 
+                                    <%= mov.tipo === 'VENTA' ? 'text-danger' : '' %>
+                                    <%= mov.tipo === 'DEVOLUCION' ? 'text-success' : '' %>
+                                    <%= mov.tipo === 'ENTRADA' ? 'text-primary' : '' %>
+                                    <%= mov.tipo === 'DAÑADO' ? 'text-secondary' : '' %>">
+                                    <%= mov.tipo === 'VENTA' ? '-' : '' %><%= mov.cantidad %>
+                                    <%= mov.tipo === 'ENTRADA' ? '+' : '' %>
+                                </td>
+                                <td><%= mov.motivo_devolucion ? mov.motivo_devolucion : '-' %></td>
                             </tr>
-                        <% } else { %>
-                            <% historial.forEach(function(mov) { %>
-                                <tr data-fecha="<%= new Date(mov.fecha_registro).toISOString().split('T')[0] %>">
-                                    <td><%= new Date(mov.fecha_registro).toLocaleString() %></td>
-                                    <td>
-                                        <% if (mov.tipo === 'VENTA') { %>
-                                             <span class="badge bg-warning text-dark">VENTA</span>
-                                         <% } else if (mov.tipo === 'DEVOLUCION') { %>
-                                             <span class="badge bg-danger">DEVOLUCIÓN</span>
-                                         <% } else if (mov.tipo === 'ENTRADA') { %>
-                                             <span class="badge bg-success">ENTRADA</span>
-                                         <% } else if (mov.tipo === 'VENCIDO') { %>
-                                             <span class="badge bg-dark">VENCIDO</span>
-                                         <% } %>
-                                    </td>
-                                    <td><strong><%= mov.producto %></strong> <br><small class="text-muted">Lote: <%= mov.numero_lote %></small></td>
-                                    <td><%= mov.numero_orden %></td>
-                                    <td class="fw-bold 
-                                        <%= mov.tipo === 'VENTA' ? 'text-danger' : '' %>
-                                        <%= mov.tipo === 'DEVOLUCION' ? 'text-success' : '' %>
-                                        <%= mov.tipo === 'ENTRADA' ? 'text-primary' : '' %>">
-                                        <%= mov.tipo === 'VENTA' ? '-' : '' %><%= mov.cantidad %>
-                                        <%= mov.tipo === 'ENTRADA' ? '+' : '' %>
-                                    </td>
-                                    <td><%= mov.motivo_devolucion ? mov.motivo_devolucion : '-' %></td>
-                                </tr>
-                            <% }); %>
-                        <% } %>
-                    </tbody>
-                </table>
-            </div>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+             </table>
         </div>
     </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-    <!-- Buttons JS -->
-    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
-    <!-- Excel y PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
-    <!-- PDFMake -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
-    <script>
-        $(document).ready(function() {
-            // Inicializar DataTable
-            var table = $('#tablaHistorial').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
-                },
-                order: [[0, 'desc']],
-                pageLength: 25,
-                dom: 'Bfrtip',
-                buttons: [
-                    {
-                        extend: 'excelHtml5',
-                        text: '📊 Exportar a Excel',
-                        title: 'Historial_Movimientos',
-                        className: 'btn-success d-none'
-                    },
-                    {
-                        extend: 'pdfHtml5',
-                        text: '📄 Exportar a PDF',
-                        title: 'Historial_Movimientos',
-                        className: 'btn-danger d-none',
-                        orientation: 'landscape',
-                        pageSize: 'LEGAL'
-                    }
-                ]
-            });
+<script>
+    // Toggle sidebar en móvil
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
 
-            // Botón Excel personalizado
-            $('#btnExcel').on('click', function() {
-                table.button(0).trigger();
-            });
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+    });
 
-            // Botón PDF personalizado
-            $('#btnPDF').on('click', function() {
-                table.button(1).trigger();
-            });
-
-            // Filtrar por fecha
-            $('#btnFiltrar').on('click', function() {
-                var fechaInicio = $('#fechaInicio').val();
-                var fechaFin = $('#fechaFin').val();
-                
-                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-                    var fechaFila = $(table.row(dataIndex).node()).data('fecha');
-                    
-                    if (!fechaInicio && !fechaFin) return true;
-                    if (!fechaInicio && fechaFila <= fechaFin) return true;
-                    if (!fechaFin && fechaFila >= fechaInicio) return true;
-                    if (fechaFila >= fechaInicio && fechaFila <= fechaFin) return true;
-                    
-                    return false;
-                });
-                
-                table.draw();
-                $.fn.dataTable.ext.search.pop();
-            });
-
-            // Limpiar filtros
-            $('#btnLimpiar').on('click', function() {
-                $('#fechaInicio').val('');
-                $('#fechaFin').val('');
-                table.search('').columns().search('').draw();
-            });
+    // Cerrar sidebar al hacer clic en enlace (móvil)
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+            }
         });
-    </script>
+    });
+
+    $(document).ready(function() {
+        var table = $('#tablaHistorial').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+            },
+            order: [[0, 'desc']],
+            pageLength: 25,
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: '📊 Exportar a Excel',
+                    title: 'Historial_Movimientos',
+                    className: 'btn-success d-none'
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: '📄 Exportar a PDF',
+                    title: 'Historial_Movimientos',
+                    className: 'btn-danger d-none',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                }
+            ]
+        });
+
+        $('#btnExcel').on('click', function() {
+            table.button(0).trigger();
+        });
+
+        $('#btnPDF').on('click', function() {
+            table.button(1).trigger();
+        });
+
+        $('#btnFiltrar').on('click', function() {
+            var fechaInicio = $('#fechaInicio').val();
+            var fechaFin = $('#fechaFin').val();
+            
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                var fechaFila = $(table.row(dataIndex).node()).data('fecha');
+                
+                if (!fechaInicio && !fechaFin) return true;
+                if (!fechaInicio && fechaFila <= fechaFin) return true;
+                if (!fechaFin && fechaFila >= fechaInicio) return true;
+                if (fechaFila >= fechaInicio && fechaFila <= fechaFin) return true;
+                
+                return false;
+            });
+            
+            table.draw();
+            $.fn.dataTable.ext.search.pop();
+        });
+
+        $('#btnLimpiar').on('click', function() {
+            $('#fechaInicio').val('');
+            $('#fechaFin').val('');
+            table.search('').columns().search('').draw();
+        });
+    });
+</script>
+
 </body>
 </html>
