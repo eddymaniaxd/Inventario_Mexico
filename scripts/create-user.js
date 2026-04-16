@@ -4,10 +4,10 @@ const readline = require('readline');
 
 const pool = mysql.createPool({
     host: 'localhost',
-    port: 3306,
+    port: 33061,
     user: 'root',
-    password: '',
-    database: 'mexico_inventario2'
+    password: '1234eddyxdi?kXD',
+    database: 'mexico_inventario'
 }).promise();
 
 const rl = readline.createInterface({
