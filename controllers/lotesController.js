@@ -7,17 +7,14 @@ const getNuevoLote = (req, res) => {
 
 // Función para validar SKU
 const validarSKU = (sku) => {
-    // Verificar que no esté vacío
     if (!sku || sku.trim() === '') {
         return { valido: false, mensaje: 'El SKU no puede estar vacío' };
     }
     
-    // Verificar longitud (ajusta los números según tu necesidad)
     if (sku.length < 3 || sku.length > 50) {
         return { valido: false, mensaje: 'El SKU debe tener entre 3 y 50 caracteres' };
     }
     
-    // Verificar que solo contenga letras, números, guiones y guiones bajos
     const regex = /^[a-zA-Z0-9_-]+$/;
     if (!regex.test(sku)) {
         return { valido: false, mensaje: 'El SKU solo puede contener letras, números, guiones y guiones bajos' };
@@ -50,37 +47,56 @@ const postNuevoLote = async (req, res) => {
         await connection.beginTransaction();
         
         try {
-            // VERIFICAR si el SKU ya existe y NO está eliminado
-            const [productoExistente] = await connection.query(
-                "SELECT id, estado FROM productos WHERE sku = ?",
+            // ✅ VERIFICAR si el SKU ya existe
+            const [productoPorSKU] = await connection.query(
+                "SELECT id, nombre, estado FROM productos WHERE sku = ?",
                 [sku]
             );
             
             let productoId;
             
-            if (productoExistente.length > 0) {
-                // Si el producto existe y está ACTIVO, no permitir duplicado
-                if (productoExistente[0].estado === 'activo') {
+            if (productoPorSKU.length > 0) {
+                const producto = productoPorSKU[0];
+                
+                // Caso 1: Mismo SKU, mismo nombre → Agregar lote
+                if (producto.nombre === nombre) {
+                    productoId = producto.id;
+                    
+                    if (producto.estado !== 'activo') {
+                        await connection.query(
+                            "UPDATE productos SET estado = 'activo', fecha_eliminacion = NULL, motivo_eliminacion = NULL WHERE id = ?",
+                            [productoId]
+                        );
+                        console.log(`✅ Producto ${sku} reactivado`);
+                    }
+                    console.log(`✅ Producto ${sku} existe - agregando nuevo lote`);
+                    
+                // Caso 2: Mismo SKU, nombre diferente → Error
+                } else {
                     await connection.rollback();
                     connection.release();
-                    return res.status(400).send(`❌ El SKU "${sku}" ya existe. No se pueden duplicar productos.`);
+                    return res.status(400).send(`❌ El SKU "${sku}" ya pertenece al producto "${producto.nombre}". No puedes usarlo para "${nombre}".`);
+                }
+            } else {
+                // ✅ SKU no existe → Verificar si el nombre ya existe en otro producto
+                const [productoPorNombre] = await connection.query(
+                    "SELECT id, nombre FROM productos WHERE nombre = ? AND estado = 'activo'",
+                    [nombre]
+                );
+                
+                if (productoPorNombre.length > 0) {
+                    await connection.rollback();
+                    connection.release();
+                    return res.status(400).send(`❌ El nombre "${nombre}" ya está en uso por otro producto (SKU: ${productoPorNombre[0].nombre}). No puedes duplicar nombres.`);
                 }
                 
-                // Si está eliminado, reactivar
-                await connection.query(
-                    "UPDATE productos SET nombre = ?, estado = 'activo', fecha_eliminacion = NULL, motivo_eliminacion = NULL WHERE sku = ?",
-                    [nombre, sku]
-                );
-                productoId = productoExistente[0].id;
-                console.log(`✅ Producto ${sku} reactivado`);
-            } else {
-                // Insertar nuevo producto
+                // Crear nuevo producto
                 const [result] = await connection.query(
                     "INSERT INTO productos (sku, nombre, estado) VALUES (?, ?, 'activo')",
                     [sku, nombre]
                 );
                 productoId = result.insertId;
-                console.log(`✅ Nuevo producto ${sku} creado`);
+                console.log(`✅ Nuevo producto ${sku} creado con nombre "${nombre}"`);
             }
             
             // Insertar el lote
@@ -118,7 +134,7 @@ const postNuevoLote = async (req, res) => {
     }
 };
 
-// Eliminar lote (solo si no tiene movimientos)
+// Eliminar lote
 const eliminarLote = async (req, res) => {
     const loteId = req.params.id;
     
