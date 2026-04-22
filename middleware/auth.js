@@ -23,7 +23,18 @@ const isAuthenticated = (req, res, next) => {
     res.redirect('/login');
 };
 
+// ✅ AGREGAR isAdmin
+const isAdmin = (req, res, next) => {
+    if (req.session && req.session.user && req.session.user.rol === 'admin') {
+        console.log('✅ Usuario admin autorizado');
+        return next();
+    }
+    console.log('❌ Acceso denegado: se requieren permisos de administrador');
+    res.status(403).send('Acceso denegado. Se requieren permisos de administrador.');
+};
+
 module.exports = {
     sessionConfig,
-    isAuthenticated
+    isAuthenticated,
+    isAdmin  // ← EXPORTAR isAdmin
 };

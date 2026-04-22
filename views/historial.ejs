@@ -168,6 +168,18 @@
             <i class="fas fa-clock"></i>
             <span>Por Vencer</span>
         </a>
+         <!-- ✅ SOLO ADMIN ve este enlace -->
+         <% if (user && user.rol === 'admin') { %>
+             <a href="/usuarios" class="menu-item">
+                 <i class="fas fa-users"></i>
+                 <span>Usuarios</span>
+             </a>
+         <% } %>
+    
+         <a href="/usuarios/perfil" class="menu-item">
+             <i class="fas fa-user-circle"></i>
+             <span>Mi Perfil</span>
+         </a>
         <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 20px;"></div>
         <a href="/logout" class="menu-item">
             <i class="fas fa-sign-out-alt"></i>

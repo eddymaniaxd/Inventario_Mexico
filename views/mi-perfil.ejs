@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Inventario</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; height: 100%; width: 280px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white; transition: all 0.3s ease; z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
+        .sidebar-header h3 { margin: 0; font-size: 1.5rem; }
+        .sidebar-header p { margin: 5px 0 0; font-size: 0.8rem; opacity: 0.7; }
+        .sidebar-menu { padding: 20px 0; }
+        .sidebar-menu .menu-item {
+            padding: 12px 25px; display: flex; align-items: center; gap: 12px;
+            color: rgba(255,255,255,0.8); text-decoration: none; transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-menu .menu-item:hover { background: rgba(255,255,255,0.1); color: white; border-left-color: #00d2ff; }
+        .sidebar-menu .menu-item i { width: 24px; font-size: 1.2rem; }
+        .main-content { margin-left: 280px; padding: 20px; min-height: 100vh; }
+        .form-card { max-width: 600px; margin: 0 auto; }
+        .menu-toggle {
+            display: none; position: fixed; top: 15px; left: 15px; z-index: 1100;
+            background: #1a1a2e; color: white; border: none; padding: 10px 15px;
+            border-radius: 8px; cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .sidebar { left: -280px; }
+            .sidebar.active { left: 0; }
+            .main-content { margin-left: 0; padding-top: 60px; }
+            .menu-toggle { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i> Menú</button>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3>📦 Inventario</h3>
+        <p>Sistema de Gestión</p>
+    </div>
+    <div class="sidebar-menu">
+        <a href="/" class="menu-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+        <a href="/detalle" class="menu-item"><i class="fas fa-boxes"></i><span>Ver por Lotes</span></a>
+        <a href="/historial" class="menu-item"><i class="fas fa-history"></i><span>Historial</span></a>
+        <a href="/vencidos" class="menu-item"><i class="fas fa-skull-crossbones"></i><span>Vencidos</span></a>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 20px;"></div>
+        <a href="/lotes/nuevo-lote" class="menu-item"><i class="fas fa-plus-circle"></i><span>Entrada</span></a>
+        <a href="/ventas/nueva-venta" class="menu-item"><i class="fas fa-shopping-cart"></i><span>Venta</span></a>
+        <a href="/devoluciones/nueva-devolucion" class="menu-item"><i class="fas fa-undo-alt"></i><span>Devolución</span></a>
+        <a href="/danados/nuevo-danado" class="menu-item"><i class="fas fa-broken"></i><span>Productos Dañados</span></a>
+        <a href="/por-vencer" class="menu-item"><i class="fas fa-clock"></i><span>Por Vencer</span></a>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 20px;"></div>
+        
+        <% if (user && user.rol === 'admin') { %>
+            <a href="/usuarios" class="menu-item"><i class="fas fa-users"></i><span>Usuarios</span></a>
+        <% } %>
+        
+        <a href="/usuarios/perfil" class="menu-item"><i class="fas fa-user-circle"></i><span>Mi Perfil</span></a>
+        <a href="/logout" class="menu-item"><i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span></a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>👤 Mi Perfil</h2>
+            <small class="text-muted">Bienvenido, <strong><%= user.nombre %></strong> | Rol: <span class="badge bg-secondary"><%= user.rol %></span></small>
+        </div>
+        <a href="/" class="btn btn-secondary"><i class="fas fa-home"></i> Volver al Inicio</a>
+    </div>
+
+    <div class="card shadow form-card">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-user-circle"></i> Información Personal</h4>
+        </div>
+        <div class="card-body">
+            <% if (error) { %>
+                <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+            <% if (success) { %>
+                <div class="alert alert-success"><%= success %></div>
+            <% } %>
+            
+            <form action="/usuarios/perfil" method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Usuario</label>
+                    <input type="text" class="form-control" value="<%= usuario.username %>" disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nombre Completo</label>
+                    <input type="text" name="nombre" class="form-control" value="<%= usuario.nombre %>" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Rol</label>
+                    <input type="text" class="form-control" value="<%= usuario.rol %>" disabled>
+                    <small class="text-muted">El rol no se puede cambiar desde aquí</small>
+                </div>
+                <hr>
+                <h5>Cambiar Contraseña</h5>
+                <div class="mb-3">
+                    <label class="form-label">Contraseña Actual *</label>
+                    <input type="password" name="password_actual" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nueva Contraseña (dejar vacío para no cambiar)</label>
+                    <input type="password" name="password_nueva" class="form-control" placeholder="Mínimo 4 caracteres">
+                </div>
+                <button type="submit" class="btn btn-info w-100"><i class="fas fa-save"></i> Actualizar Perfil</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    menuToggle.addEventListener('click', () => sidebar.classList.toggle('active'));
+    
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.addEventListener('click', () => { 
+            if (window.innerWidth <= 768) sidebar.classList.remove('active'); 
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
