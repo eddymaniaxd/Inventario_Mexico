@@ -55,49 +55,51 @@ const postNuevoLote = async (req, res) => {
             
             let productoId;
             
-            if (productoPorSKU.length > 0) {
-                const producto = productoPorSKU[0];
-                
-                // Caso 1: Mismo SKU, mismo nombre → Agregar lote
-                if (producto.nombre === nombre) {
-                    productoId = producto.id;
-                    
-                    if (producto.estado !== 'activo') {
-                        await connection.query(
-                            "UPDATE productos SET estado = 'activo', fecha_eliminacion = NULL, motivo_eliminacion = NULL WHERE id = ?",
-                            [productoId]
-                        );
-                        console.log(`✅ Producto ${sku} reactivado`);
-                    }
-                    console.log(`✅ Producto ${sku} existe - agregando lote`);
-                    
-                // Caso 2: Mismo SKU, nombre diferente → Error
-                } else {
-                    await connection.rollback();
-                    connection.release();
-                    return res.status(400).send(`❌ El SKU "${sku}" ya pertenece al producto "${producto.nombre}". No puedes usarlo para "${nombre}".`);
-                }
-            } else {
-                // ✅ SKU no existe → Verificar si el nombre ya existe en otro producto
-                const [productoPorNombre] = await connection.query(
-                    "SELECT id, nombre FROM productos WHERE nombre = ? AND estado = 'activo'",
-                    [nombre]
-                );
-                
-                if (productoPorNombre.length > 0) {
-                    await connection.rollback();
-                    connection.release();
-                    return res.status(400).send(`❌ El nombre "${nombre}" ya está en uso por otro producto.`);
-                }
-                
-                // Crear nuevo producto
-                const [result] = await connection.query(
-                    "INSERT INTO productos (sku, nombre, estado) VALUES (?, ?, 'activo')",
-                    [sku, nombre]
-                );
-                productoId = result.insertId;
-                console.log(`✅ Nuevo producto ${sku} creado con nombre "${nombre}"`);
-            }
+          if (productoPorSKU.length > 0) {
+            
+                 const producto = productoPorSKU[0];
+                 
+                 // ✅ Ignorar espacios al comparar nombres
+                 if (producto.nombre.trim() === nombre.trim()) {
+                     productoId = producto.id;
+                     
+                     if (producto.estado !== 'activo') {
+                         await connection.query(
+                             "UPDATE productos SET estado = 'activo', fecha_eliminacion = NULL, motivo_eliminacion = NULL WHERE id = ?",
+                             [productoId]
+                         );
+                         console.log(`✅ Producto ${sku} reactivado`);
+                     }
+                     console.log(`✅ Producto ${sku} existe - agregando nuevo lote`);
+                     
+                 } else {
+                     await connection.rollback();
+                     connection.release();
+                     const nombreLimpio = producto.nombre.trim();
+                     return res.status(400).send(`❌ El SKU "${sku}" ya pertenece al producto "${nombreLimpio}". No puedes usarlo para "${nombre}".`);
+                 }
+             } else {
+                 // ✅ Verificar si el nombre ya existe (ignorando espacios)
+                 const [productoPorNombre] = await connection.query(
+                     "SELECT id, nombre FROM productos WHERE TRIM(nombre) = TRIM(?) AND estado = 'activo'",
+                     [nombre]
+                 );
+                 
+                 if (productoPorNombre.length > 0) {
+                     await connection.rollback();
+                     connection.release();
+                     return res.status(400).send(`❌ El nombre "${nombre.trim()}" ya está en uso por otro producto. No puedes duplicar nombres.`);
+                 }
+                 
+                 // Crear nuevo producto (nombre limpio)
+                 const nombreLimpio = nombre.trim();
+                 const [result] = await connection.query(
+                     "INSERT INTO productos (sku, nombre, estado) VALUES (?, ?, 'activo')",
+                     [sku, nombreLimpio]
+                 );
+                 productoId = result.insertId;
+                 console.log(`✅ Nuevo producto ${sku} creado con nombre "${nombreLimpio}"`);
+             }
             
             // ✅ VERIFICAR si el lote ya existe para este producto
             const [loteExistente] = await connection.query(
