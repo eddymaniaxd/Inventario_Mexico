@@ -69,7 +69,7 @@ const postNuevoLote = async (req, res) => {
                         );
                         console.log(`✅ Producto ${sku} reactivado`);
                     }
-                    console.log(`✅ Producto ${sku} existe - agregando nuevo lote`);
+                    console.log(`✅ Producto ${sku} existe - agregando lote`);
                     
                 // Caso 2: Mismo SKU, nombre diferente → Error
                 } else {
@@ -87,7 +87,7 @@ const postNuevoLote = async (req, res) => {
                 if (productoPorNombre.length > 0) {
                     await connection.rollback();
                     connection.release();
-                    return res.status(400).send(`❌ El nombre "${nombre}" ya está en uso por otro producto (SKU: ${productoPorNombre[0].nombre}). No puedes duplicar nombres.`);
+                    return res.status(400).send(`❌ El nombre "${nombre}" ya está en uso por otro producto.`);
                 }
                 
                 // Crear nuevo producto
@@ -99,10 +99,31 @@ const postNuevoLote = async (req, res) => {
                 console.log(`✅ Nuevo producto ${sku} creado con nombre "${nombre}"`);
             }
             
-            // Insertar el lote
-            const sqlLote = "INSERT INTO lotes (producto_id, numero_lote, fecha_expiracion, entradas) VALUES (?, ?, ?, ?)";
-            const [loteResult] = await connection.query(sqlLote, [productoId, numero_lote, fecha_expiracion, entradas]);
-            const loteId = loteResult.insertId;
+            // ✅ VERIFICAR si el lote ya existe para este producto
+            const [loteExistente] = await connection.query(
+                "SELECT id, entradas FROM lotes WHERE producto_id = ? AND numero_lote = ?",
+                [productoId, numero_lote]
+            );
+            
+            let loteId;
+            
+            if (loteExistente.length > 0) {
+                // ✅ El lote ya existe → SUMAR las entradas
+                const nuevasEntradas = loteExistente[0].entradas + parseInt(entradas);
+                
+                await connection.query(
+                    "UPDATE lotes SET entradas = ?, fecha_expiracion = ? WHERE id = ?",
+                    [nuevasEntradas, fecha_expiracion, loteExistente[0].id]
+                );
+                loteId = loteExistente[0].id;
+                console.log(`✅ Lote ${numero_lote} actualizado - Nuevo total: ${nuevasEntradas}`);
+            } else {
+                // ✅ Lote nuevo → INSERT
+                const sqlLote = "INSERT INTO lotes (producto_id, numero_lote, fecha_expiracion, entradas) VALUES (?, ?, ?, ?)";
+                const [loteResult] = await connection.query(sqlLote, [productoId, numero_lote, fecha_expiracion, entradas]);
+                loteId = loteResult.insertId;
+                console.log(`✅ Nuevo lote ${numero_lote} creado con ${entradas} unidades`);
+            }
             
             // Crear orden de entrada
             const numeroOrdenEntrada = `ENT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
